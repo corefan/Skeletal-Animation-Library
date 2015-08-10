@@ -36,6 +36,15 @@ find_package(Threads REQUIRED)
 message("Threads libraries/flag: ${CMAKE_THREAD_LIBS_INIT}")
 
 add_executable(sfml_examples sfml_examples.cpp)
+
+if(UNIX)
+    find_package(X11 REQUIRED)
+    message("X11 include dir: ${X11_INCLUDE_DIR}")
+    message("X11 libraries: ${X11_LIBRARIES}")
+    include_directories(${X11_INCLUDE_DIR})
+    target_link_libraries(sfml_examples ${X11_LIBRARIES})
+endif()
+
 target_link_libraries(sfml_examples ${CMAKE_THREAD_LIBS_INIT})
 target_link_libraries(sfml_examples ${SFML_LIBRARIES})
 target_link_libraries(sfml_examples ${ASSIMP_LIBRARIES})
