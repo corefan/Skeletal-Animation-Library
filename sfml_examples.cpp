@@ -170,7 +170,11 @@ void printBoneHierarchy(const SkeletalAnimationModel<TextureHandler>& model) {
 class SFMLApplication {
 public:
     SFMLApplication(): contextSettings(32), 
-            window(sf::VideoMode(800, 640), "Skeletal Animation Library", sf::Style::Default, contextSettings) {}
+            window(sf::VideoMode(800, 640), "Skeletal Animation Library", sf::Style::Default, contextSettings),
+            astroBoyMovingGlasses(astroBoy.model), astroBoyHeadBanging(astroBoy.model) {
+        //Output bone hierarchy of astroBoy model:
+        printBoneHierarchy(astroBoy.model);
+    }
 
     void start() {
         window.setFramerateLimit(100);
@@ -205,6 +209,12 @@ private:
     sf::ContextSettings contextSettings;
     sf::Window window;
     
+    //Models
+    UnanimatedAstroBoy unanimatedAstroBoy;
+    AstroBoy astroBoy;
+    AstroBoyMovingGlasses astroBoyMovingGlasses;
+    AstroBoyHeadBanging astroBoyHeadBanging;
+    
     void draw() {
         //Activate the window's context
         window.setActive();
@@ -230,13 +240,6 @@ private:
         glLoadIdentity();
         GLfloat ratio = float(window.getSize().x) / window.getSize().y;
         glFrustum(-ratio, ratio, -1.0, 1.0, 1.0, 500.0);
-
-        //Loading models
-        UnanimatedAstroBoy unanimatedAstroBoy;
-        AstroBoy astroBoy;
-        printBoneHierarchy(astroBoy.model);
-        AstroBoyMovingGlasses astroBoyMovingGlasses(astroBoy.model);
-        AstroBoyHeadBanging astroBoyHeadBanging(astroBoy.model);
         
         //Store start time
         std::chrono::time_point<std::chrono::system_clock> startTime=std::chrono::system_clock::now();
