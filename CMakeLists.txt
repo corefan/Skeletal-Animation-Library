@@ -1,46 +1,30 @@
 cmake_minimum_required (VERSION 2.8)
+
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules")
-set(ASSIMP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules")
 
 project (SkeletalAnimationLibrary)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -O3 -Wall -Wextra -Wno-unused-parameter")
 
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
-        message(FATAL_ERROR "GCC version >=4.8 required.")
-    endif()
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 3.4)
-        message(FATAL_ERROR "Clang version >=3.4 required.")
-    endif()
-else()
-    message(WARNING "Your compiler (${CMAKE_CXX_COMPILER_ID}) has not been tested on this project. Only Clang and GCC has been tested. Please report any problems at the project page on GitHub.")
+if(APPLE)
+    link_directories(/usr/local/lib)
 endif()
 
 find_package(SFML 2.1 COMPONENTS system window graphics REQUIRED)
-message("SFML include dir: ${SFML_INCLUDE_DIR}")
-message("SFML libraries: ${SFML_LIBRARIES}")
 include_directories(${SFML_INCLUDE_DIR})
 
+set(ASSIMP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules")
 find_package(ASSIMP 3 REQUIRED)
-message("AssImp include dir: ${ASSIMP_INCLUDE_DIR}")
-message("AssImp libraries: ${ASSIMP_LIBRARIES}")
 include_directories(${ASSIMP_INCLUDE_DIR})
 
 find_package(OpenGL REQUIRED)
-message("OpenGL include dir: ${OPENGL_INCLUDE_DIR}")
-message("OpenGL libraries: ${OPENGL_LIBRARIES}")
 include_directories(${OPENGL_INCLUDE_DIR})
 
 find_package(Threads REQUIRED)
-message("Threads libraries/flag: ${CMAKE_THREAD_LIBS_INIT}")
 
 add_executable(sfml_examples sfml_examples.cpp)
 
 if(UNIX)
     find_package(X11 REQUIRED)
-    message("X11 include dir: ${X11_INCLUDE_DIR}")
-    message("X11 libraries: ${X11_LIBRARIES}")
     include_directories(${X11_INCLUDE_DIR})
     target_link_libraries(sfml_examples ${X11_LIBRARIES})
 endif()

@@ -3,6 +3,13 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/System.hpp>
 #include <SFML/OpenGL.hpp>
+
+#ifdef __APPLE__
+#include <OpenGL/glu.h>
+#else
+#include <GL/glu.h>
+#endif
+
 #include <chrono>
 #include <thread>
 #include <iostream>
@@ -170,14 +177,14 @@ void printBoneHierarchy(const SkeletalAnimationModel<TextureHandler>& model) {
 class SFMLApplication {
 public:
     SFMLApplication(): contextSettings(32), 
-            window(sf::VideoMode(800, 640), "Skeletal Animation Library", sf::Style::Default, contextSettings),
+            window(sf::VideoMode(800, 600), "Skeletal Animation Library", sf::Style::Default, contextSettings),
             astroBoyMovingGlasses(astroBoy.model), astroBoyHeadBanging(astroBoy.model) {
         //Output bone hierarchy of astroBoy model:
         printBoneHierarchy(astroBoy.model);
     }
 
     void start() {
-        window.setFramerateLimit(100);
+        window.setFramerateLimit(144);
         window.setVerticalSyncEnabled(true);
 
         //Deactivate OpenGL context of window, will reopen in draw()
@@ -187,16 +194,19 @@ public:
         std::thread drawThread(&SFMLApplication::draw, this);
 
         //Event thread (main thread)
-        while (window.isOpen()) {
+        bool running = true;
+        while (running) {
             sf::Event event;
             while (window.pollEvent(event)) {
                 if (event.type == sf::Event::KeyPressed) {
                     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)) {
                         window.close();
+                        running=false;
                     }
                 }
-                if (event.type == sf::Event::Closed) {
+                else if (event.type == sf::Event::Closed) {
                     window.close();
+                    running = false;
                 }
             }
         }
@@ -221,12 +231,8 @@ private:
 
         //Various settings
         glClearColor(0.5, 0.5, 0.5, 0.0f);
-        glShadeModel(GL_SMOOTH);
         glEnable(GL_DEPTH_TEST);
-        glDepthMask(GL_TRUE);
-        glClearDepth(1.0f);
-        glDepthFunc(GL_LEQUAL);
-        glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+        glDepthFunc(GL_LESS);
         glEnable(GL_TEXTURE_2D);
         
         //Lighting
@@ -238,8 +244,8 @@ private:
         //Setup projection matrix
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        GLfloat ratio = float(window.getSize().x) / window.getSize().y;
-        glFrustum(-ratio, ratio, -1.0, 1.0, 1.0, 500.0);
+        //45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
+        gluPerspective(45.0, 4.0 / 3.0, 0.1, 100.0);
         
         //Store start time
         std::chrono::time_point<std::chrono::system_clock> startTime=std::chrono::system_clock::now();
@@ -253,7 +259,9 @@ private:
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glLoadIdentity();
 
-            glTranslatef(0.0f, -20.0f, -45.0f);
+            gluLookAt(0.0, 30.0, -65.0, //Camera position in World Space
+                      0.0, 5.0, 0.0,    //Camera looks towards this position
+                      0.0, 1.0, 0.0);   //Up
 
             glPushMatrix();
             glRotatef(-time*50.0, 0.0, 1.0, 0.0);
