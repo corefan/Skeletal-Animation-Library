@@ -15,14 +15,6 @@
 #include <iostream>
 #include <functional>
 
-//If Linux: must run XInitThreads() from X11/Xlib.h before starting threads in X11
-#ifdef __linux
-#include<X11/Xlib.h>
-#define INIT_THREADS XInitThreads();
-#else
-#define INIT_THREADS
-#endif
-
 const std::string modelPath="models/";
 
 //Class that defines how we are to handle materials, and especially textures, in the 3D model.
@@ -175,47 +167,6 @@ void printBoneHierarchy(const SkeletalAnimationModel<TextureHandler>& model) {
 
 //Create window, handle events, and OpenGL draw-function
 class SFMLApplication {
-public:
-    SFMLApplication(): contextSettings(32), 
-            window(sf::VideoMode(800, 600), "Skeletal Animation Library", sf::Style::Default, contextSettings),
-            astroBoyMovingGlasses(astroBoy.model), astroBoyHeadBanging(astroBoy.model) {
-        //Output bone hierarchy of astroBoy model:
-        printBoneHierarchy(astroBoy.model);
-    }
-
-    void start() {
-        window.setFramerateLimit(144);
-        window.setVerticalSyncEnabled(true);
-
-        //Deactivate OpenGL context of window, will reopen in draw()
-        window.setActive(false);
-
-        //Start draw in a separate thread
-        std::thread drawThread(&SFMLApplication::draw, this);
-
-        //Event thread (main thread)
-        bool running = true;
-        while (running) {
-            sf::Event event;
-            while (window.pollEvent(event)) {
-                if (event.type == sf::Event::KeyPressed) {
-                    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)) {
-                        window.close();
-                        running=false;
-                    }
-                }
-                else if (event.type == sf::Event::Closed) {
-                    window.close();
-                    running = false;
-                }
-            }
-        }
-        
-        //Wait for draw_thread to also finish for clean exit
-        drawThread.join();
-    }
-    
-private:
     sf::ContextSettings contextSettings;
     sf::Window window;
     
@@ -225,10 +176,16 @@ private:
     AstroBoyMovingGlasses astroBoyMovingGlasses;
     AstroBoyHeadBanging astroBoyHeadBanging;
     
-    void draw() {
-        //Activate the window's context
-        window.setActive();
-
+public:
+    SFMLApplication(): contextSettings(32), 
+            window(sf::VideoMode(800, 600), "Skeletal Animation Library", sf::Style::Default, contextSettings),
+            astroBoyMovingGlasses(astroBoy.model), astroBoyHeadBanging(astroBoy.model) {
+        //Output bone hierarchy of astroBoy model:
+        printBoneHierarchy(astroBoy.model);
+        
+        window.setFramerateLimit(144);
+        window.setVerticalSyncEnabled(true);
+        
         //Various settings
         glClearColor(0.5, 0.5, 0.5, 0.0f);
         glEnable(GL_DEPTH_TEST);
@@ -247,22 +204,39 @@ private:
         //45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
         gluPerspective(45.0, 4.0 / 3.0, 0.1, 100.0);
         
-        //Store start time
-        std::chrono::time_point<std::chrono::system_clock> startTime=std::chrono::system_clock::now();
-        
-        //The rendering loop
         glMatrixMode(GL_MODELVIEW);
-        while (window.isOpen()) {
+    }
+
+    void start() {
+        std::chrono::time_point<std::chrono::system_clock> startTime=std::chrono::system_clock::now();
+
+        //Event thread (main thread)
+        bool running = true;
+        while (running) {
+            sf::Event event;
+            while (window.pollEvent(event)) {
+                if (event.type == sf::Event::KeyPressed) {
+                    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape)) {
+                        window.close();
+                        running=false;
+                    }
+                }
+                else if (event.type == sf::Event::Closed) {
+                    window.close();
+                    running = false;
+                }
+            }
+            
             std::chrono::duration<double> elapsed_seconds = std::chrono::system_clock::now() - startTime;
             double time=elapsed_seconds.count();
             
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glLoadIdentity();
-
+        
             gluLookAt(0.0, 30.0, -65.0, //Camera position in World Space
                       0.0, 5.0, 0.0,    //Camera looks towards this position
                       0.0, 1.0, 0.0);   //Up
-
+        
             glPushMatrix();
             glRotatef(-time*50.0, 0.0, 1.0, 0.0);
             glTranslatef(20.0, 0.0, 0.0);            
@@ -292,8 +266,6 @@ private:
 };
 
 int main() {
-    INIT_THREADS
-            
     SFMLApplication sfmlApplication;
     sfmlApplication.start();
     
